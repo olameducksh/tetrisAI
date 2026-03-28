@@ -9,7 +9,8 @@ SCREEN_WIDTH = GRID_WIDTH * BLOCK_SIZE
 SCREEN_HEIGHT = GRID_HEIGHT * BLOCK_SIZE
 
 black = (0, 0, 0)
-grey = (128, 128, 128)
+grey = (65,68,67)
+white = (181,181,182)
 
 def create_grid():
     grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
@@ -68,13 +69,13 @@ shape_dict = {
 }
 
 color_dict = {
-    'I_shape': (0, 255, 255),    # Cyan
-    'J_shape': (0, 0, 255),      # Blue
-    'L_shape': (255, 165, 0),    # Orange
-    'O_shape': (255, 255, 0),    # Yellow
-    'S_shape': (0, 255, 0),      # Green
-    'T_shape': (128, 0, 128),    # Purple
-    'Z_shape': (255, 0, 0)       # Red
+    'I_shape': (88,162,169),    # Cyan
+    'J_shape': (55,82,251),      # Blue
+    'L_shape': (204,135,0),    # Orange
+    'O_shape': (188,182,27),    # Yellow
+    'S_shape': (20,158,74),      # Green
+    'T_shape': (142,36,136),    # Purple
+    'Z_shape': (161,18,18)       # Red
 }
 
 class Block:
@@ -103,7 +104,8 @@ def draw_piece(surface, piece):
                 pixel_x = (piece.x + c) * BLOCK_SIZE
                 pixel_y = (piece.y + r) * BLOCK_SIZE
 
-                pygame.draw.rect(surface, piece.color, (pixel_x,pixel_y, BLOCK_SIZE, BLOCK_SIZE))
+                pygame.draw.rect(surface, piece.color, (pixel_x + 1,pixel_y +1 , BLOCK_SIZE-2, BLOCK_SIZE-2))
+                pygame.draw.rect(surface, white, (pixel_x,pixel_y, BLOCK_SIZE, BLOCK_SIZE), width= 1)
 
 #draw the locked blocks on the board
 def draw_board(surface, board):
@@ -113,7 +115,7 @@ def draw_board(surface, board):
                 pixel_x = c*BLOCK_SIZE
                 pixel_y = r*BLOCK_SIZE
 
-                pygame.draw.rect(surface, board[r][c] , (pixel_x, pixel_y, BLOCK_SIZE, BLOCK_SIZE))
+                pygame.draw.rect(surface, board[r][c] , (pixel_x+1, pixel_y+1, BLOCK_SIZE-2, BLOCK_SIZE-2))
 
 
 def lock_piece(piece, board):
@@ -155,8 +157,27 @@ def clear_lines(board):
         else:
             r -= 1
 
-    return lines_cleared            
+    return lines_cleared
 
+def draw_ghost(surface, board, piece):
+    original_y = piece.y
+    while True:
+        piece.y += 1
+        if check_bounds(piece, board) == False:
+            piece.y -= 1
+            break
+    
+    ghost_y = piece.y
+
+    piece.y = original_y
+
+    for r in range(0, len(piece.shape)):
+        for c in range(0, len(piece.shape[0])):
+            if piece.shape[r][c] == 1:
+                pixel_x = (piece.x + c) * BLOCK_SIZE
+                pixel_y = (ghost_y + r) * BLOCK_SIZE
+
+                pygame.draw.rect(surface, piece.color, (pixel_x+1,pixel_y+1, BLOCK_SIZE-2, BLOCK_SIZE-2), width= 1)
 
 def main():
     pygame.init()
@@ -279,6 +300,7 @@ def main():
         #draw the board with locked pieces
         draw_board(screen, main_board)
         #create piece
+        draw_ghost(screen, main_board, current_block)
         draw_piece(screen, current_block)
 
         pygame.display.flip()
