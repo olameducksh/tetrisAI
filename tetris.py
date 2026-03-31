@@ -1,5 +1,6 @@
 import pygame
 import random
+from ai_heuristics import get_best_move
 
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
@@ -186,8 +187,8 @@ def draw_ghost(surface, board, piece):
                 pygame.draw.rect(surface, piece.color, (pixel_x+1,pixel_y+1, BLOCK_SIZE-2, BLOCK_SIZE-2), width= 1)
 
 def draw_ui(surface, score, held_piece, next_piece):
-    font = pygame.font.SysFont('ariel', 30)
-    font2 = pygame.font.SysFont('ariel', 50)
+    font = pygame.font.SysFont('', 30)
+    font2 = pygame.font.SysFont('impact', 30)
 
     # left sidebar (hold)
     hold_text = font.render("HOLD", True, white)
@@ -270,17 +271,27 @@ def main():
     clock = pygame.time.Clock()
 
     last_fall_time = pygame.time.get_ticks()
-    fall_speed = 500 #half a second
+    fall_speed = 0
 
     shape_list = list(shape_dict.keys())
-    current_block = Block(4,0, random.choice(shape_list))
-    next_piece = random.choice(shape_list)
+    
 
     held_piece = None
     held_this_turn = False
 
     main_board = create_grid()
     score = 0
+
+    current_block = Block(4,0, random.choice(shape_list))
+    best_score, best_x, best_rotation = get_best_move(main_board, current_block)
+
+    # Apply the best rotation
+    for _ in range(best_rotation):
+        current_block.rotate()
+    # Apply the best X position
+    current_block.x = best_x
+
+    next_piece = random.choice(shape_list)
 
     movingL = False
     movingR = False
@@ -373,12 +384,21 @@ def main():
                 # get new random block each time
                 shape_list = list(shape_dict.keys())
                 current_block = Block(4,0, next_piece)
+
+                best_score, best_x, best_rotation = get_best_move(main_board, current_block)
+                # Apply the best rotation
+                for _ in range(best_rotation):
+                    current_block.rotate()
+                # Apply the best X position
+                current_block.x = best_x
+
                 next_piece = random.choice(shape_list)
                 held_this_turn = False
 
                 # death check
                 if check_bounds(current_block, main_board) == False:
                     print("game over type shit")
+                    print("final score: ", score)
                     running = False
 
             last_fall_time = current_time
@@ -396,7 +416,7 @@ def main():
         draw_ui(screen, score, held_piece, next_piece)
         
         pygame.display.flip()
-        clock.tick(60) #refresh rate = 60
+        clock.tick(120) #refresh rate = 60
 
     pygame.quit()
 
