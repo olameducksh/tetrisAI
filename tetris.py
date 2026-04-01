@@ -2,6 +2,9 @@ import pygame
 import random
 from ai_heuristics import get_best_move
 
+RUNAI = True
+FALLSPEED = 0
+
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
 BLOCK_SIZE = 30
@@ -264,17 +267,49 @@ def draw_ui(surface, score, held_piece, next_piece):
     # pygame.draw.rect(surface, white, (525, 265, 150, 40), width=1)
     surface.blit(score_no, (532, 270))
 
+
+
+def run_ai(main_board, current_block,held_piece, held_this_turn,next_piece, runai = RUNAI):
+    if runai == False:
+        return current_block, held_piece, held_this_turn, next_piece
+        
+    shape_list = list(shape_dict.keys())
+    
+    if held_piece == None:
+        held_piece = current_block.name
+        current_block = Block(4,0, next_piece)
+        next_piece = random.choice(shape_list)
+
+    best_score, best_x, best_rotation = get_best_move(main_board, current_block)
+
+    current_held = Block(4, 0, held_piece)
+    best_score_h, best_x_h, best_rotation_h = get_best_move(main_board, current_held)
+
+    if best_score_h > best_score and not held_this_turn:
+        temp = current_block.name
+        current_block = Block(4,0, held_piece)
+        held_piece = temp
+        held_this_turn = True
+        best_x, best_rotation = best_x_h, best_rotation_h
+
+    # apply the best setting
+    for _ in range(best_rotation):
+        current_block.rotate()
+    current_block.x = best_x
+
+    return current_block, held_piece, held_this_turn, next_piece
+
 def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
     running = True
     clock = pygame.time.Clock()
 
+
     last_fall_time = pygame.time.get_ticks()
-    fall_speed = 0
+    fall_speed = FALLSPEED
 
     shape_list = list(shape_dict.keys())
-    
 
     held_piece = None
     held_this_turn = False
@@ -283,15 +318,12 @@ def main():
     score = 0
 
     current_block = Block(4,0, random.choice(shape_list))
-    best_score, best_x, best_rotation = get_best_move(main_board, current_block)
-
-    # Apply the best rotation
-    for _ in range(best_rotation):
-        current_block.rotate()
-    # Apply the best X position
-    current_block.x = best_x
-
     next_piece = random.choice(shape_list)
+
+    current_block, held_piece, held_this_turn, next_piece = run_ai(
+        main_board, current_block,held_piece, held_this_turn,next_piece
+    )
+
 
     movingL = False
     movingR = False
@@ -384,17 +416,15 @@ def main():
                 # get new random block each time
                 shape_list = list(shape_dict.keys())
                 current_block = Block(4,0, next_piece)
-
-                best_score, best_x, best_rotation = get_best_move(main_board, current_block)
-                # Apply the best rotation
-                for _ in range(best_rotation):
-                    current_block.rotate()
-                # Apply the best X position
-                current_block.x = best_x
-
                 next_piece = random.choice(shape_list)
                 held_this_turn = False
 
+
+                current_block, held_piece, held_this_turn, next_piece = run_ai(
+                    main_board, current_block,held_piece, held_this_turn,next_piece
+                )
+
+                
                 # death check
                 if check_bounds(current_block, main_board) == False:
                     print("game over type shit")
@@ -416,7 +446,8 @@ def main():
         draw_ui(screen, score, held_piece, next_piece)
         
         pygame.display.flip()
-        clock.tick(120) #refresh rate = 60
+        if not run_ai:
+            clock.tick(60) #refresh rate = 60
 
     pygame.quit()
 
